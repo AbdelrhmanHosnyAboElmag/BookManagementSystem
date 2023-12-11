@@ -6,9 +6,7 @@ import com.example.bookstoremanageruser.data.local.entity.BookReservedEntity
 import com.example.bookstoremanageruser.domain.usecase.InsertReservedBookUseCase
 import com.example.bookstoremanageruser.domain.usecase.RedoUseCase
 import com.example.bookstoremanageruser.domain.usecase.UndoUseCase
-import com.example.bookstoremanageruser.presentation.ui.state.DetailScreenState
-import com.example.bookstoremanageruser.presentation.ui.state.RedoState
-import com.example.bookstoremanageruser.presentation.ui.state.UndoState
+import com.example.bookstoremanageruser.presentation.ui.state.SaveBookState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,26 +23,19 @@ class DetailViewModel @Inject constructor(
 ) :
     ViewModel() {
     private val _insertReservedBookStateFlow =
-        MutableStateFlow<DetailScreenState>(DetailScreenState())
-    val insertReservedBookStateFlow: StateFlow<DetailScreenState> =
-        _insertReservedBookStateFlow.asStateFlow()
-
-    private val _bookUndoStateFlow = MutableStateFlow(UndoState())
-    val bookUndoStateFlow: StateFlow<UndoState> = _bookUndoStateFlow.asStateFlow()
-    private val _bookRedoStateFlow = MutableStateFlow(RedoState())
-    val bookRedoStateFlow: StateFlow<RedoState> = _bookRedoStateFlow.asStateFlow()
-
+        MutableStateFlow(SaveBookState())
+    val insertReservedBookStateFlow: StateFlow<SaveBookState> = _insertReservedBookStateFlow
     fun execute(bookReservedEntity: BookReservedEntity) {
         insertReservedBookUseCase(bookReservedEntity).onEach {
             when {
                 it.data == true -> {
                     _insertReservedBookStateFlow.value =
-                        DetailScreenState(isInsert = it.data == true)
+                        SaveBookState(isSaveDatabase = it.data, isRemovedDatabase = false)
                 }
 
                 it.message?.isNotEmpty() == true -> {
                     _insertReservedBookStateFlow.value =
-                        DetailScreenState(isError = it.message)
+                        SaveBookState(message = it.message)
                 }
             }
         }.launchIn(viewModelScope)
@@ -53,13 +44,13 @@ class DetailViewModel @Inject constructor(
 
     fun undoSave() {
         undoUseCase().onEach {
-            _bookUndoStateFlow.value = UndoState(isSuccess = it)
+            _insertReservedBookStateFlow.value = SaveBookState(isRemovedDatabase = it, isSaveDatabase = false)
         }.launchIn(viewModelScope)
     }
 
-    fun redoSave(){
-        redoUseCase().onEach {
-            _bookRedoStateFlow.value = RedoState(bookReservationState = it)
-        }.launchIn(viewModelScope)
-    }
+//    fun redoSave(){
+//        redoUseCase().onEach {
+//            _bookRedoStateFlow.value = RedoState(bookReservationState = it)
+//        }.launchIn(viewModelScope)
+//    }
 }

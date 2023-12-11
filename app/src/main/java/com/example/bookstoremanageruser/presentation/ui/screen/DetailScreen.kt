@@ -114,39 +114,31 @@ fun DetailScreen(
 fun saveButton(
     detailViewModel: DetailViewModel, bookEntityItem: BookEntity, optionalNote: String
 ) {
-    val data = detailViewModel.insertReservedBookStateFlow.collectAsState().value
-    val undo = detailViewModel.bookUndoStateFlow.collectAsState().value
-
+    val saveBookState = detailViewModel.insertReservedBookStateFlow.collectAsState().value
+    val context = LocalContext.current
     var isButtonSave by remember {
         mutableStateOf(true)
     }
+
     when {
-        data.isInsert -> {
-            Toast.makeText(LocalContext.current, "add success", Toast.LENGTH_SHORT).show()
+        saveBookState.isSaveDatabase -> {
             isButtonSave = false
+            Toast.makeText(context, "add success", Toast.LENGTH_SHORT).show()
         }
-
-        data.isLoading -> {
-
+        saveBookState.isRemovedDatabase -> {
+            isButtonSave = true
+            Toast.makeText(context, "undo success", Toast.LENGTH_SHORT).show()
         }
-
-        data.isError.isNotEmpty() -> {
-            Toast.makeText(LocalContext.current, "something wrong happened :<", Toast.LENGTH_SHORT)
-                .show()
-        }
-    }
-    if (undo.isSuccess) {
-        Toast.makeText(LocalContext.current, "undo success", Toast.LENGTH_SHORT).show()
-        isButtonSave = true
-    } else {
-        Toast.makeText(LocalContext.current, "undo error", Toast.LENGTH_SHORT).show()
+        saveBookState.message.isNotEmpty() -> {}
     }
     Button(
         onClick = {
+
             if (isButtonSave) {
                 detailViewModel.execute(
                     BookNoteDecorator(
-                        BookReservedEntity(id = bookEntityItem.id,
+                        BookReservedEntity(
+                            id = bookEntityItem.id,
                             title = bookEntityItem.title,
                             reservationDate = bookEntityItem.reservation,
                             image = bookEntityItem.image,
@@ -161,9 +153,9 @@ fun saveButton(
         },
         modifier = Modifier.fillMaxWidth()
     ) {
-        if (isButtonSave){
+        if (isButtonSave) {
             Text(text = "save book!!")
-        }else{
+        } else {
             Text(text = "undo book!!")
         }
     }
